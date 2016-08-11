@@ -26,12 +26,18 @@ if !wrong_branch.empty?
     Autoproj.warn "  #{pkgs}"
 end
 
-require File.join(File.dirname(__FILE__), 'rock/git_hook')
-require File.join(File.dirname(__FILE__), 'rock/cmake_build_type')
-
 Autoproj.env_add_path 'ROCK_BUNDLE_PATH', File.join(Autobuild.prefix, 'share', 'rock')
 Autoproj.env_add_path 'ROCK_BUNDLE_PATH', File.join(Autoproj.root_dir, 'bundles')
 
+require File.join(__dir__, 'rock', 'cxx11')
+if Autoproj.respond_to?(:workspace) # autoproj 2.0
+    Rock.setup_cxx11_support(Autoproj.workspace.os_package_resolver, Autoproj.config)
+else
+    Rock.setup_cxx11_support(Autoproj.osdeps, Autoproj.config)
+end
+
+require File.join(__dir__, 'rock', 'git_hook')
+require File.join(__dir__, 'rock', 'cmake_build_type')
 Autoproj.manifest.each_autobuild_package do |pkg|
     case pkg.importer
     when Autobuild::Git
@@ -72,6 +78,8 @@ Autoproj.manifest.each_autobuild_package do |pkg|
     when Autobuild::CMake
         pkg.define "ROCK_TEST_ENABLED", pkg.test_utility.enabled?
         pkg.define "CMAKE_EXPORT_COMPILE_COMMANDS", "ON"
+
+        pkg.define 'ROCK_USE_CXX11', Autoproj.config.get('cxx11')
     end
 end
 
